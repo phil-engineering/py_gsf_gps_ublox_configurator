@@ -78,7 +78,7 @@ class PyGSFGPSSerial:
                     received_data += data.decode("utf-8")
                 else:
                     break
-            print("Receiving from uBlox: {}".format(received_data))
+            # print("Receiving from uBlox: {}".format(received_data))
             return received_data
         except Exception as e:
             print(f"Error reading from serial port: {e}")
@@ -100,7 +100,7 @@ class PyGSFGPSSerial:
 
         try:
             if WRITE_ECHO:
-                print("Sending to uBlox: {}".format(data))
+                print("Sending to uBlox: {}".format(data.removeprefix("\r\n").removesuffix("\r\n")))
             if isinstance(data, str):
                 data = data.encode()
             self.serial_port.write(data)
@@ -130,21 +130,6 @@ class PyGSFGPSSerial:
             print(f"Error setting DTR state: {e}")
             return False
 
-    def enter_command_mode(self) -> bool:
-        """
-        Enter command mode by sending '+++' sequence.
-
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        try:
-            self.write('+++')
-            sleep(2)  # Wait for command mode
-            return True
-        except Exception as e:
-            print(f"Error entering command mode: {e}")
-            return False
-
     def send_at_command(self, command: str) -> Optional[str]:
         """
         Send an AT command and return the response.
@@ -160,10 +145,13 @@ class PyGSFGPSSerial:
 
         if self.write(command):
             sleep(0.1)  # Wait for response
-            return self.read()
+            read_data = self.read()
+            answer = read_data.removeprefix(command).removeprefix("\r\n").removesuffix("\r\n")
+            print("Receiving from uBlox: {}".format(answer))
+            return answer
         return None
 
-    def exit_command_mode(self) -> bool:
+    def enter_data_mode(self) -> bool:
         """
         Exit from AT command mode and return to data mode in the uBlox GPS module.
 
@@ -198,7 +186,7 @@ class PyGSFGPSSerial:
             print(f"Error setting DTR state: {e}")
             return False
 
-    def exit_data_mode(self) -> bool:
+    def enter_command_mode(self) -> bool:
         """
         Exit from data mode and enter AT command mode in the uBlox GPS module.
 
