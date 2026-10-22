@@ -1,10 +1,21 @@
 # Import the custom GPS serial communication class
 from PyGSFGPSSerial import *
 
-BLUETOOTH_MODULE_NAME = "GSFGPS_BT_0001"
+# User settings
+COM_PORT = "COM3"
+BLUETOOTH_MODULE_NAME = "GSF_GEO_BT_0001"
+IS_THIS_A_GSF_GEO_NEW_GENERATION = False
 
-# Initialize GPS module on COM6 port
-gps = PyGSFGPSSerial(port='COM6')
+# Using the following for the initial configuration. If you program the new GSF GEO
+#   with IS_THIS_A_GSF_GEO_NEW_GENERATION = True, then the BT won't use RTS/CST. Then set USING_BT_RTS_CTS = False
+USING_BT_RTS_CTS = True
+
+############################################################################################
+# CODE BEGIN BELOW, DO NOT EDIT THE LINES BELOW.
+############################################################################################
+
+# Initialize GPS module on COMx port
+gps = PyGSFGPSSerial(port=COM_PORT,rtscts=USING_BT_RTS_CTS)
 
 # Attempt to establish serial connection
 if gps.open():
@@ -25,6 +36,16 @@ if gps.open():
     gps.send_at_command("AT+UBTLN={}".format(BLUETOOTH_MODULE_NAME))
     # Query Bluetooth module name
     gps.send_at_command("AT+UBTLN?")
+
+    # Send test AT command to verify everything is okay
+    gps.send_at_command("AT")
+
+    if IS_THIS_A_GSF_GEO_NEW_GENERATION:
+        # Program the Bluetooth module at 115200 bauds, NO FLOW CONTROL
+        # The 2nd parameter is flow control: 1=CTS/RTS (Default), 2=No Flow Control
+        # The last parameter is to apply the change instantly or at the next reset: 0=Next reset, 1=Instantly
+        gps.send_at_command("AT+UMRS={}".format("115200,2,8,1,1,0"))
+        gps.send_at_command("AT+UMRS?")
 
     # Store the current configuration to the Bluetooth. Need the AT+CPWROFF command to write it in non-volatile memory
     gps.send_at_command("AT&W0")
